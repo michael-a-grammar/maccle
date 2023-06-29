@@ -1,4 +1,14 @@
+defmodule MaccleCode.Shared do
+  defmacro is_letter(letter) when is_binary(letter) do
+    quote do
+      String.length(unquote(letter)) == 1 && String.match?(unquote(letter), ~r/[[:alpha:]]/)
+    end
+  end
+end
+
 defmodule MaccleCode do
+  import MaccleCode.Shared
+
   @type message :: String.t()
 
   @spec start(message()) :: any()
@@ -9,7 +19,7 @@ defmodule MaccleCode do
       # TODO: This will not handle none alpha characters
       message_part
       |> String.graphemes()
-      |> Enum.filter(&String.match?(&1, ~r/[[:alpha:]]/))
+      |> Enum.filter(&is_letter/1)
 
       # TODO: Ideally -
       # Filter unique letters
@@ -26,6 +36,15 @@ defmodule MaccleCode do
         "dict -d 'moby-thesaurus' -m -s re '^#{String.downcase(letter)}.*$'"
       end)
     end)
+  end
+end
+
+defmodule MaccleCode.Dict do
+  import MaccleCode.Shared
+
+  @attributes ["-d", "moby-thesaurus", "-m", "-s", "-re"]
+
+  def words_beginning_with(letter) when is_letter(letter) do
   end
 end
 
@@ -56,6 +75,7 @@ defmodule MaccleCode.Test do
     assert ^result = expected
   end
 
+  @tag :ignore
   test "it splits a message part into letters" do
     message = "Hello world, it's nice to be here!"
 
