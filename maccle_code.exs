@@ -14,40 +14,59 @@ defmodule MaccleCode.Shared do
   end
 end
 
-defmodule MaccleCode do
-  import MaccleCode.Shared
+defmodule MaccleCode.Server do
+  use GenServer
 
-  @type message :: String.t()
-  @type unique_letters :: list(String.t())
-  @type message_part :: list(String.t())
-  @type message_parts :: list(message_part())
+  @impl true
+  def init(initial_words \\ []) do
+    letters_and_words =
+      for codepoint <- ?a..?z, into: %{} do
+        letter = <<codepoint::utf8>>
 
-  # The most common letters in English, apparently
-  @common_letters ~w(e t a o i n s r h l)
+        # TODO: This does not work the way I thought it did
+        words =
+          case initial_words do
+            [{^letter, words} | _] -> words
+            _ -> []
+          end
 
-  @spec start(message()) :: any()
-  def start(message) when is_binary(message) do
-    format_message_to_encode(message)
+        IO.inspect({letter, words}, label: "Here")
+
+        {String.to_atom(letter), words}
+      end
+
+    {:ok, letters_and_words}
   end
 
-  @spec format_message_to_encode(message()) :: {unique_letters(), message_parts()}
-  defp format_message_to_encode(message) when is_binary(message) do
-    message
-    |> split_string(:space)
-    |> Enum.map(fn message_part ->
-      message_part
-      |> String.graphemes()
-      |> Enum.filter(&letter?/1)
-      |> Enum.map(&String.downcase/1)
-    end)
-    |> then(fn message_parts ->
-      unique_letters =
-        message_parts
-        |> List.flatten()
-        |> Enum.uniq()
+  @impl true
+  def handle_call({:retrieve, letter}, _from, letters_and_words) do
+    words = Map.fetch(letters_and_words, letter)
 
-      {unique_letters, message_parts}
-    end)
+    {:reply, words, letters_and_words}
+  end
+
+  @impl true
+  def handle_cast({:add, {letter, words}}, letters_and_words) do
+    # TODO: Refactor
+    new_letters_and_words = Map.put(letters_and_words, letter, words)
+
+    {:noreply, new_letters_and_words}
+  end
+end
+
+defmodule MaccleCode.Client do
+  alias MaccleCode.Server
+
+  def start_link(initial_words \\ []) do
+    GenServer.start_link(Server, initial_words)
+  end
+
+  def retrieve_words_for_letter(pid, letter) do
+    GenServer.call(pid, {:retrieve, letter})
+  end
+
+  def add_words_for_letter(pid, letter_and_words) do
+    GenServer.cast(pid, {:add, letter_and_words})
   end
 end
 
@@ -84,45 +103,56 @@ defmodule MaccleCode.Dict do
   end
 end
 
-defmodule MaccleCode.Client do
-  def start_link(initial_words \\ []) do
-    GenServer.start_link(MaccleCode.Server, initial_words)
+defmodule MaccleCode do
+  alias MaccleCode.Client
+  alias MaccleCode.Dict
+  import MaccleCode.Shared
+
+  @type message :: String.t()
+  @type unique_letters :: list(String.t())
+  @type message_part :: list(String.t())
+  @type message_parts :: list(message_part())
+
+  # The most common letters in English, apparently
+  @common_letters ~w(e t a o i n s r h l)
+
+  def init(_opts \\ []) do
+    # TODO: Time to completion is ridiculously slow, needs to be async
+    initial_words =
+      @common_letters
+      |> Enum.map(fn letter ->
+        {:ok, words} = Dict.words_beginning_with(letter)
+
+        {letter, words}
+      end)
+
+    # TODO: Uh, is this supposed to go here?
+    Client.start_link(initial_words)
   end
 
-  def retrieve_words_for_letter(pid, letter) do
-    GenServer.call(pid, {:retrieve, letter})
+  @spec encode(message()) :: any()
+  def encode(message) when is_binary(message) do
+    format_message_to_encode(message)
   end
 
-  def add_words_for_letter(pid, letter_and_words) do
-    GenServer.cast(pid, {:add, letter_and_words})
-  end
-end
+  @spec format_message_to_encode(message()) :: {unique_letters(), message_parts()}
+  defp format_message_to_encode(message) when is_binary(message) do
+    message
+    |> split_string(:space)
+    |> Enum.map(fn message_part ->
+      message_part
+      |> String.graphemes()
+      |> Enum.filter(&letter?/1)
+      |> Enum.map(&String.downcase/1)
+    end)
+    |> then(fn message_parts ->
+      unique_letters =
+        message_parts
+        |> List.flatten()
+        |> Enum.uniq()
 
-defmodule MaccleCode.Server do
-  use GenServer
-
-  @impl true
-  def init(_initial_words) do
-    letters_and_words =
-      for letter <- ?a..?z, into: %{} do
-        {String.to_atom(<<letter::utf8>>), []}
-      end
-
-    {:ok, letters_and_words}
-  end
-
-  @impl true
-  def handle_call({:retrieve, letter}, _from, letters_and_words) do
-    words = Map.fetch(letters_and_words, letter)
-
-    {:reply, words, letters_and_words}
-  end
-
-  @impl true
-  def handle_cast({:add, {letter, words}}, letters_and_words) do
-    new_letters_and_words = Map.put(letters_and_words, letter, words)
-
-    {:noreply, new_letters_and_words}
+      {unique_letters, message_parts}
+    end)
   end
 end
 
@@ -131,14 +161,14 @@ ExUnit.start(exclude: [:ignore])
 defmodule MaccleCode.Test do
   use ExUnit.Case, async: true
 
-  describe "MaccleCode.start/1" do
+  describe "MaccleCode.encode/1" do
     @tag :ignore
     test "it splits a message on spaces" do
       message = "Hello world, it's nice to be here!"
 
       expected = ~w(Hello world it's nice to be here!)
 
-      result = MaccleCode.start(message)
+      result = MaccleCode.encode(message)
 
       assert ^result = expected
     end
@@ -149,7 +179,7 @@ defmodule MaccleCode.Test do
 
       expected = ~w(Hello world it's nice to be here!)
 
-      result = MaccleCode.start(message)
+      result = MaccleCode.encode(message)
 
       assert ^result = expected
     end
@@ -168,7 +198,7 @@ defmodule MaccleCode.Test do
         ~w(h e r e)
       ]
 
-      result = MaccleCode.start(message)
+      result = MaccleCode.encode(message)
 
       assert ^result = expected
     end
@@ -190,7 +220,7 @@ defmodule MaccleCode.Test do
 
       expected = {unique_letters, split_message}
 
-      result = MaccleCode.start(message)
+      result = MaccleCode.encode(message)
 
       assert ^result = expected
     end
