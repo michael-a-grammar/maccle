@@ -1,6 +1,16 @@
 defmodule MaccleCode.Shared do
-  def letter?(letter) do
+  @spec letter?(String.t()) :: boolean()
+  def letter?(letter) when is_binary(letter) do
     String.length(letter) == 1 && String.match?(letter, ~r/[[:alpha:]]/)
+  end
+
+  @spec split_string(String.t(), atom() | String.t()) :: String.t()
+  def split_string(string, :space), do: split_string(string, " ")
+  def split_string(string, :newline), do: split_string(string, "\n")
+  def split_string(string, :tab), do: split_string(string, "\t")
+
+  def split_string(string, pattern) when is_binary(string) do
+    String.split(string, pattern, trim: true)
   end
 end
 
@@ -8,6 +18,7 @@ defmodule MaccleCode do
   import MaccleCode.Shared
 
   @type message :: String.t()
+  @type unique_letters :: list(String.t())
   @type message_part :: list(String.t())
   @type message_parts :: list(message_part())
 
@@ -19,10 +30,10 @@ defmodule MaccleCode do
     format_message_to_encode(message)
   end
 
-  @spec start(message()) :: {list(String.t()), message_parts()}
+  @spec format_message_to_encode(message()) :: {unique_letters(), message_parts()}
   defp format_message_to_encode(message) when is_binary(message) do
     message
-    |> String.split(" ", trim: true)
+    |> split_string(:space)
     |> Enum.map(fn message_part ->
       message_part
       |> String.graphemes()
@@ -54,8 +65,8 @@ defmodule MaccleCode.Dict do
           {result, 0} ->
             words =
               result
-              |> String.split("\n", trim: true)
-              |> Enum.map(&String.split(&1, "\t", trim: true))
+              |> split_string(:newline)
+              |> Enum.map(&split_string(&1, :tab))
               |> Enum.map(&List.last/1)
               |> Enum.filter(&(!String.contains?(&1, " ")))
 
@@ -70,6 +81,48 @@ defmodule MaccleCode.Dict do
     else
       {:error, letter}
     end
+  end
+end
+
+defmodule MaccleCode.Client do
+  def start_link(initial_words \\ []) do
+    GenServer.start_link(MaccleCode.Server, initial_words)
+  end
+
+  def retrieve_words_for_letter(pid, letter) do
+    GenServer.call(pid, {:retrieve, letter})
+  end
+
+  def add_words_for_letter(pid, letter_and_words) do
+    GenServer.cast(pid, {:add, letter_and_words})
+  end
+end
+
+defmodule MaccleCode.Server do
+  use GenServer
+
+  @impl true
+  def init(_initial_words) do
+    letters_and_words =
+      for letter <- ?a..?z, into: %{} do
+        {String.to_atom(<<letter::utf8>>), []}
+      end
+
+    {:ok, letters_and_words}
+  end
+
+  @impl true
+  def handle_call({:retrieve, letter}, _from, letters_and_words) do
+    words = Map.fetch(letters_and_words, letter)
+
+    {:reply, words, letters_and_words}
+  end
+
+  @impl true
+  def handle_cast({:add, {letter, words}}, letters_and_words) do
+    new_letters_and_words = Map.put(letters_and_words, letter, words)
+
+    {:noreply, new_letters_and_words}
   end
 end
 
