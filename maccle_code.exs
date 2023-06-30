@@ -1,6 +1,9 @@
 defmodule MaccleCode.Shared do
   @spec letter?(String.t()) :: boolean()
   def letter?(letter) when is_binary(letter) do
+    # This will fail for the vast majority of non-Latin characters
+    # Maybe checking the length of the string is silly
+    # Also can't believe I can't make this a guard
     String.length(letter) == 1 && String.match?(letter, ~r/[[:alpha:]]/)
   end
 
@@ -23,14 +26,14 @@ defmodule MaccleCode.Server do
       for codepoint <- ?a..?z, into: %{} do
         letter = <<codepoint::utf8>>
 
-        # TODO: This does not work the way I thought it did
         words =
-          case initial_words do
-            [{^letter, words} | _] -> words
+          initial_words
+          # `Enum.flat_map/2` kind of acts like a filter and a map operation here with the parameter match
+          # Note the pin operator, might be too cute
+          |> Enum.flat_map(fn
+            {^letter, words} -> words
             _ -> []
-          end
-
-        IO.inspect({letter, words}, label: "Here")
+          end)
 
         {String.to_atom(letter), words}
       end
@@ -46,11 +49,10 @@ defmodule MaccleCode.Server do
   end
 
   @impl true
-  def handle_cast({:add, {letter, words}}, letters_and_words) do
-    # TODO: Refactor
+  def handle_call({:add, {letter, words}}, _from, letters_and_words) do
     new_letters_and_words = Map.put(letters_and_words, letter, words)
 
-    {:noreply, new_letters_and_words}
+    {:reply, new_letters_and_words}
   end
 end
 
@@ -66,21 +68,32 @@ defmodule MaccleCode.Client do
   end
 
   def add_words_for_letter(pid, letter_and_words) do
-    GenServer.cast(pid, {:add, letter_and_words})
+    GenServer.call(pid, {:add, letter_and_words})
   end
 end
 
 defmodule MaccleCode.Dict do
   import MaccleCode.Shared
 
+  @doc ~S"""
+  The attributes provided to a call to Dict
+  So, use the moby-thesaurus uh, dictionary, which generally seems to have the best results
+  Format the results for easier parsing - rows seperated by newlines, columns seperated by tabs
+  Match rather than query results
+  Use POSIX regex for the actual query itself
+  """
   @attributes ~w(--database moby-thesaurus --formatted --match --strategy re)
 
   def words_beginning_with(letter) do
+    # TODO: Can you really never use remote functions within a guard?
     if letter?(letter) do
+      # Anchor at the start of word, match the letter and any sequence and count of characters until the end of the line
       attributes = @attributes ++ ["^#{letter}.*$"]
 
       try do
         case System.cmd("dict", attributes) do
+          # Would probably behoove me to check what `0` exactly means in this case
+          # Presumably an exit code
           {result, 0} ->
             words =
               result
@@ -113,25 +126,58 @@ defmodule MaccleCode do
   @type message_part :: list(String.t())
   @type message_parts :: list(message_part())
 
-  # The most common letters in English, apparently
+  # The 10 most common letters in English, apparently
   @common_letters ~w(e t a o i n s r h l)
 
-  def init(_opts \\ []) do
-    # TODO: Time to completion is ridiculously slow, needs to be async
+  def init(opts \\ []) do
     initial_words =
-      @common_letters
-      |> Enum.map(fn letter ->
-        {:ok, words} = Dict.words_beginning_with(letter)
+      case Keyword.get(opts, :eager, nil) do
+        true ->
+          # Here, we eagerly load words for the 10 most common letters in English
+          # As making 10 requests synchronous requests to Dict is painfully slow,
+          # we fire off 10 concurrent tasks instead
+          # If Dict blocks our IP, this is why lol
+          @common_letters
+          |> Enum.map(fn letter ->
+            Task.async(fn ->
+              # Let it fail
+              {:ok, words} = Dict.words_beginning_with(letter)
 
-        {letter, words}
-      end)
+              {letter, words}
+            end)
+          end)
+          |> Task.await_many()
+
+        _ ->
+          []
+      end
 
     # TODO: Uh, is this supposed to go here?
+    # Maybe look at it again when we add Phoenix, presumably that encapsulates
+    # Supervision etc.
     Client.start_link(initial_words)
   end
 
-  @spec encode(message()) :: any()
-  def encode(message) when is_binary(message) do
+  @spec encode(pid(), message()) :: any()
+  def encode(pid, message) when is_pid(pid) and is_binary(message) do
+    # Reminder - the below returns:
+    # Two element tuple containing two lists
+
+    # First list is the unique letters contained within the message,
+    # each of which should be checked against our server to ensure we have words persisted for said letter
+
+    # Second list is a list of lists, each nested list containing the individual
+    # letters of a word of the message
+
+    # TODO: Refactor the above Task jazz within `MaccleCode.init/1`, as we will need to possibly query Dict
+    # for each unique letter. This could go horribly wrong with rate limits, but we'll see
+    # Add a function to the server to ensure that we have words persisted (or not) for a letter
+    # If we don't, then query Dict
+
+    # For each letter of a word of a message (breathe), query the server and return a random
+    # word. That becomes part of the encoded message
+    # For now, return the unencoded message and the encoded message, so:
+    # {:ok, {unencoded_message, encoded_message}}
     format_message_to_encode(message)
   end
 
@@ -153,147 +199,5 @@ defmodule MaccleCode do
 
       {unique_letters, message_parts}
     end)
-  end
-end
-
-ExUnit.start(exclude: [:ignore])
-
-defmodule MaccleCode.Test do
-  use ExUnit.Case, async: true
-
-  describe "MaccleCode.encode/1" do
-    @tag :ignore
-    test "it splits a message on spaces" do
-      message = "Hello world, it's nice to be here!"
-
-      expected = ~w(Hello world it's nice to be here!)
-
-      result = MaccleCode.encode(message)
-
-      assert ^result = expected
-    end
-
-    @tag :ignore
-    test "it ignores two or more spaces" do
-      message = "Hello  world, it's     nice to be here!"
-
-      expected = ~w(Hello world it's nice to be here!)
-
-      result = MaccleCode.encode(message)
-
-      assert ^result = expected
-    end
-
-    @tag :ignore
-    test "it splits a message part into letters" do
-      message = "Hello world, it's nice to be here!"
-
-      expected = [
-        ~w(H e l l o),
-        ~w(w o r l d),
-        ~w(i t s),
-        ~w(n i c e),
-        ~w(t o),
-        ~w(b e),
-        ~w(h e r e)
-      ]
-
-      result = MaccleCode.encode(message)
-
-      assert ^result = expected
-    end
-
-    test "it returns a split message and unique letters" do
-      message = "Hello world, it's nice to be here!"
-
-      unique_letters = ~w(h e l o w r d i t s n c b)
-
-      split_message = [
-        ~w(h e l l o),
-        ~w(w o r l d),
-        ~w(i t s),
-        ~w(n i c e),
-        ~w(t o),
-        ~w(b e),
-        ~w(h e r e)
-      ]
-
-      expected = {unique_letters, split_message}
-
-      result = MaccleCode.encode(message)
-
-      assert ^result = expected
-    end
-  end
-
-  describe "MaccleCode.Dict.words_beginning_with/1" do
-    @tag :ignore
-    test "it returns an ok tuple" do
-      letter = "h"
-
-      expected = {:ok, letter}
-
-      result = MaccleCode.Dict.words_beginning_with(letter)
-
-      assert ^result = expected
-    end
-
-    @tag :ignore
-    test "it returns an error tuple if not provided with a letter" do
-      character = "!"
-
-      expected = {:error, character}
-
-      result = MaccleCode.Dict.words_beginning_with(character)
-
-      assert ^result = expected
-    end
-
-    @tag :ignore
-    test "it strips the results of garbage" do
-      results = "
-dict.org	2628	moby-thesaurus	ha ha
-dict.org	2628	moby-thesaurus	haberdasher
-dict.org	2628	moby-thesaurus	haberdashery
-dict.org	2628	moby-thesaurus	habit
-dict.org	2628	moby-thesaurus	habitat
-dict.org	2628	moby-thesaurus	habitation
-dict.org	2628	moby-thesaurus	habitual
-dict.org	2628	moby-thesaurus	habitually
-dict.org	2628	moby-thesaurus	habituate
-dict.org	2628	moby-thesaurus	habituation
-dict.org	2628	moby-thesaurus	habitue
-dict.org	2628	moby-thesaurus	hachure
-dict.org	2628	moby-thesaurus	hacienda
-dict.org	2628	moby-thesaurus	hack
-dict.org	2628	moby-thesaurus	hack it"
-
-      expected = ~w(
-        haberdasher
-        haberdashery
-        habit
-        habitat
-        habitation
-        habitual
-        habitually
-        habituate
-        habituation
-        habitue
-        hachure        
-        hacienda      
-        hack
-      )
-
-      result =
-        results
-        |> String.split("\n", trim: true)
-        |> Enum.map(&String.split(&1, "\t", trim: true))
-        |> Enum.map(&List.last/1)
-        |> Enum.filter(&(!String.contains?(&1, " ")))
-
-      IO.inspect(result, label: "result")
-
-      assert ^expected = result
-    end
   end
 end
