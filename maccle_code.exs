@@ -1,16 +1,15 @@
 defmodule MaccleCode.Shared do
   @spec letter?(String.t()) :: boolean()
   def letter?(letter) when is_binary(letter) do
-    # This will fail for the vast majority of non-Latin characters
-    # Maybe checking the length of the string is silly
+    # This will fail for the vast majority of non-Latin characters...?
     # Also can't believe I can't make this a guard
-    String.length(letter) == 1 && String.match?(letter, ~r/[[:alpha:]]/)
+    String.match?(letter, ~r/[[:alpha:]]/)
   end
 
   @spec split_string(String.t(), atom() | String.t()) :: String.t()
-  def split_string(string, :space), do: split_string(string, " ")
-  def split_string(string, :newline), do: split_string(string, "\n")
-  def split_string(string, :tab), do: split_string(string, "\t")
+  def split_string(string, :space) when is_binary(string), do: split_string(string, " ")
+  def split_string(string, :newline) when is_binary(string), do: split_string(string, "\n")
+  def split_string(string, :tab) when is_binary(string), do: split_string(string, "\t")
 
   def split_string(string, pattern) when is_binary(string) do
     String.split(string, pattern, trim: true)
@@ -23,7 +22,7 @@ defmodule MaccleCode.Server do
   @impl true
   def init(initial_words \\ []) do
     letters_and_words =
-      for codepoint <- ?a..?z, into: %{} do
+      for codepoint <- ?a..?z, into: [] do
         letter = <<codepoint::utf8>>
 
         words =
@@ -35,7 +34,7 @@ defmodule MaccleCode.Server do
             _ -> []
           end)
 
-        {String.to_atom(letter), words}
+        {letter, words}
       end
 
     {:ok, letters_and_words}
@@ -43,16 +42,19 @@ defmodule MaccleCode.Server do
 
   @impl true
   def handle_call({:retrieve, letter}, _from, letters_and_words) do
-    words = Map.fetch(letters_and_words, letter)
+    words =
+      letters_and_words
+      |> List.keyfind!(letter, 0)
+      |> elem(1)
 
     {:reply, words, letters_and_words}
   end
 
   @impl true
   def handle_call({:add, {letter, words}}, _from, letters_and_words) do
-    new_letters_and_words = Map.put(letters_and_words, letter, words)
+    new_letters_and_words = List.keyreplace(letters_and_words, letter, 0, {letter, words})
 
-    {:reply, new_letters_and_words}
+    {:reply, letters_and_words, new_letters_and_words}
   end
 end
 
@@ -65,6 +67,12 @@ defmodule MaccleCode.Client do
 
   def retrieve_words_for_letter(pid, letter) do
     GenServer.call(pid, {:retrieve, letter})
+  end
+
+  def has_words_for_letter(pid, letter) do
+    pid
+    |> retrieve_words_for_letter(letter)
+    |> Enum.any?()
   end
 
   def add_words_for_letter(pid, letter_and_words) do
@@ -85,14 +93,14 @@ defmodule MaccleCode.Dict do
   @attributes ~w(--database moby-thesaurus --formatted --match --strategy re)
 
   def words_beginning_with(letter) do
-    # TODO: Can you really never use remote functions within a guard?
+    # TODO: can you really never use remote functions within a guard?
     if letter?(letter) do
       # Anchor at the start of word, match the letter and any sequence and count of characters until the end of the line
       attributes = @attributes ++ ["^#{letter}.*$"]
 
       try do
         case System.cmd("dict", attributes) do
-          # Would probably behoove me to check what `0` exactly means in this case
+          # TODO: would probably behoove me to check what `0` exactly means in this context
           # Presumably an exit code
           {result, 0} ->
             words =
@@ -138,15 +146,7 @@ defmodule MaccleCode do
           # we fire off 10 concurrent tasks instead
           # If Dict blocks our IP, this is why lol
           @common_letters
-          |> Enum.map(fn letter ->
-            Task.async(fn ->
-              # Let it fail
-              {:ok, words} = Dict.words_beginning_with(letter)
-
-              {letter, words}
-            end)
-          end)
-          |> Task.await_many()
+          |> retrieve_words_for_letters()
 
         _ ->
           []
@@ -160,25 +160,30 @@ defmodule MaccleCode do
 
   @spec encode(pid(), message()) :: any()
   def encode(pid, message) when is_pid(pid) and is_binary(message) do
-    # Reminder - the below returns:
-    # Two element tuple containing two lists
+    {unique_letters, message_parts} = format_message_to_encode(message)
 
-    # First list is the unique letters contained within the message,
-    # each of which should be checked against our server to ensure we have words persisted for said letter
+    unique_letters
+    |> Enum.map(fn unique_letter ->
+      {Client.has_words_for_letter(pid, unique_letter), unique_letter}
+    end)
+    |> Enum.filter(&(!elem(&1, 0)))
+    |> Enum.map(&elem(&1, 1))
+    |> retrieve_words_for_letters()
+    # TODO: This will be a rather large bottleneck
+    # You probably want to do this as one operation
+    |> Enum.map(&Client.add_words_for_letter(pid, &1))
 
-    # Second list is a list of lists, each nested list containing the individual
-    # letters of a word of the message
+    encoded_message =
+      message_parts
+      |> Enum.map(fn letters ->
+        letters
+        |> Enum.map(fn letter ->
+          Client.retrieve_words_for_letter(pid, letter)
+          |> Enum.random()
+        end)
+      end)
 
-    # TODO: Refactor the above Task jazz within `MaccleCode.init/1`, as we will need to possibly query Dict
-    # for each unique letter. This could go horribly wrong with rate limits, but we'll see
-    # Add a function to the server to ensure that we have words persisted (or not) for a letter
-    # If we don't, then query Dict
-
-    # For each letter of a word of a message (breathe), query the server and return a random
-    # word. That becomes part of the encoded message
-    # For now, return the unencoded message and the encoded message, so:
-    # {:ok, {unencoded_message, encoded_message}}
-    format_message_to_encode(message)
+    {:ok, encoded_message}
   end
 
   @spec format_message_to_encode(message()) :: {unique_letters(), message_parts()}
@@ -199,5 +204,17 @@ defmodule MaccleCode do
 
       {unique_letters, message_parts}
     end)
+  end
+
+  defp retrieve_words_for_letters(letters) do
+    letters
+    |> Enum.map(fn letter ->
+      Task.async(fn ->
+        {:ok, words} = Dict.words_beginning_with(letter)
+
+        {letter, words}
+      end)
+    end)
+    |> Task.await_many()
   end
 end
