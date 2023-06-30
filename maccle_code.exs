@@ -175,7 +175,7 @@ defmodule MaccleCode do
 
     encoded_message =
       message_parts
-      |> Enum.map(fn letters ->
+      |> Enum.flat_map(fn letters ->
         letters
         |> Enum.map(fn letter ->
           Client.retrieve_words_for_letter(pid, letter)
