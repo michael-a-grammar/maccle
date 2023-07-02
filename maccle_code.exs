@@ -1,10 +1,6 @@
 defmodule MaccleCode.Shared do
   @spec letter?(String.t()) :: boolean()
-  def letter?(letter) when is_binary(letter) do
-    # This will fail for the vast majority of non-Latin characters...?
-    # Also can't believe I can't make this a guard
-    String.match?(letter, ~r/[[:alpha:]]/)
-  end
+  def letter?(letter) when is_binary(letter), do: String.match?(letter, ~r/[[:alpha:]]/)
 
   @spec split_string(String.t(), atom() | String.t()) :: String.t()
   def split_string(string, :space) when is_binary(string), do: split_string(string, " ")
@@ -27,8 +23,6 @@ defmodule MaccleCode.Server do
 
         words =
           initial_words
-          # `Enum.flat_map/2` kind of acts like a filter and a map operation here with the parameter match
-          # Note the pin operator, might be too cute
           |> Enum.flat_map(fn
             {^letter, words} -> words
             _ -> []
@@ -41,18 +35,21 @@ defmodule MaccleCode.Server do
   end
 
   @impl true
-  def handle_call({:retrieve, letter}, _from, letters_and_words) do
-    words =
-      letters_and_words
-      |> List.keyfind!(letter, 0)
-      |> elem(1)
+  def handle_call({:retrieve, letters}, _from, letters_and_words) do
+    retrieved_letters_and_words =
+      Enum.map(letters, fn letter ->
+        List.keyfind!(letters_and_words, letter, 0)
+      end)
 
-    {:reply, words, letters_and_words}
+    {:reply, retrieved_letters_and_words, letters_and_words}
   end
 
   @impl true
-  def handle_call({:add, {letter, words}}, _from, letters_and_words) do
-    new_letters_and_words = List.keyreplace(letters_and_words, letter, 0, {letter, words})
+  def handle_call({:add, letters_and_words_to_add}, _from, letters_and_words) do
+    new_letters_and_words =
+      Enum.reduce(letters_and_words_to_add, letters_and_words, fn {letter, words}, acc ->
+        List.keyreplace(acc, letter, 0, {letter, words})
+      end)
 
     {:reply, letters_and_words, new_letters_and_words}
   end
@@ -65,18 +62,16 @@ defmodule MaccleCode.Client do
     GenServer.start_link(Server, initial_words)
   end
 
-  def retrieve_words_for_letter(pid, letter) do
-    GenServer.call(pid, {:retrieve, letter})
-  end
+  def retrieve_words_for_letters(pid, letters), do: GenServer.call(pid, {:retrieve, letters})
 
-  def has_words_for_letter(pid, letter) do
+  def has_words_for_letters(pid, letters) do
     pid
-    |> retrieve_words_for_letter(letter)
-    |> Enum.any?()
+    |> retrieve_words_for_letters(letters)
+    |> Enum.map(fn {letter, words} -> {letter, Enum.any?(words)} end)
   end
 
-  def add_words_for_letter(pid, letter_and_words) do
-    GenServer.call(pid, {:add, letter_and_words})
+  def add_words_for_letters(pid, letters_and_words) do
+    GenServer.call(pid, {:add, letters_and_words})
   end
 end
 
@@ -93,15 +88,12 @@ defmodule MaccleCode.Dict do
   @attributes ~w(--database moby-thesaurus --formatted --match --strategy re)
 
   def words_beginning_with(letter) do
-    # TODO: can you really never use remote functions within a guard?
     if letter?(letter) do
       # Anchor at the start of word, match the letter and any sequence and count of characters until the end of the line
       attributes = @attributes ++ ["^#{letter}.*$"]
 
       try do
         case System.cmd("dict", attributes) do
-          # TODO: would probably behoove me to check what `0` exactly means in this context
-          # Presumably an exit code
           {result, 0} ->
             words =
               result
@@ -152,9 +144,6 @@ defmodule MaccleCode do
           []
       end
 
-    # TODO: Uh, is this supposed to go here?
-    # Maybe look at it again when we add Phoenix, presumably that encapsulates
-    # Supervision etc.
     Client.start_link(initial_words)
   end
 
@@ -163,27 +152,41 @@ defmodule MaccleCode do
     {unique_letters, message_parts} = format_message_to_encode(message)
 
     unique_letters
-    |> Enum.map(fn unique_letter ->
-      {Client.has_words_for_letter(pid, unique_letter), unique_letter}
-    end)
-    |> Enum.filter(&(!elem(&1, 0)))
-    |> Enum.map(&elem(&1, 1))
+    |> then(&Client.has_words_for_letters(pid, &1))
+    |> Enum.filter(&(!elem(&1, 1)))
+    |> Enum.map(&elem(&1, 0))
     |> retrieve_words_for_letters()
-    # TODO: This will be a rather large bottleneck
-    # You probably want to do this as one operation
-    |> Enum.map(&Client.add_words_for_letter(pid, &1))
+    |> then(&Client.add_words_for_letters(pid, &1))
 
     encoded_message =
       message_parts
-      |> Enum.flat_map(fn letters ->
+      |> Enum.map(fn letters ->
         letters
-        |> Enum.map(fn letter ->
-          Client.retrieve_words_for_letter(pid, letter)
+        |> then(&Client.retrieve_words_for_letters(pid, &1))
+        |> Enum.map(fn words ->
+          words
+          |> elem(1)
           |> Enum.random()
         end)
       end)
 
     {:ok, encoded_message}
+  end
+
+  def format_encoded_message(encoded_message) do
+    case encoded_message do
+      {:ok, encoded_message_parts} ->
+        Enum.map_join(encoded_message_parts, " ", &Enum.join(&1, " "))
+
+      _ ->
+        :error
+    end
+  end
+
+  def decode(pid, message) when is_pid(pid) and is_binary(message) do
+    message
+    |> split_string(:space)
+    |> Enum.map(&String.at(&1, 0))
   end
 
   @spec format_message_to_encode(message()) :: {unique_letters(), message_parts()}
