@@ -1,11 +1,19 @@
 defmodule MaccleCode.Shared do
-  @spec letter?(String.t()) :: boolean()
-  def letter?(letter) when is_binary(letter), do: String.match?(letter, ~r/[[:alpha:]]/)
+  def letter?(letter) when is_binary(letter) do
+    String.match?(letter, ~r/[[:alpha:]]/)
+  end
 
-  @spec split_string(String.t(), atom() | String.t()) :: String.t()
-  def split_string(string, :space) when is_binary(string), do: split_string(string, " ")
-  def split_string(string, :newline) when is_binary(string), do: split_string(string, "\n")
-  def split_string(string, :tab) when is_binary(string), do: split_string(string, "\t")
+  def split_string(string, :space) when is_binary(string) do
+    split_string(string, " ")
+  end
+
+  def split_string(string, :newline) when is_binary(string) do
+    split_string(string, "\n")
+  end
+  
+  def split_string(string, :tab) when is_binary(string) do
+    split_string(string, "\t")
+  end
 
   def split_string(string, pattern) when is_binary(string) do
     String.split(string, pattern, trim: true)
@@ -56,13 +64,16 @@ defmodule MaccleCode.Server do
 end
 
 defmodule MaccleCode.Client do
+  import MaccleCode.Shared
   alias MaccleCode.Server
 
   def start_link(initial_words \\ []) do
     GenServer.start_link(Server, initial_words)
   end
 
-  def retrieve_words_for_letters(pid, letters), do: GenServer.call(pid, {:retrieve, letters})
+  def retrieve_words_for_letters(pid, letters) do
+    GenServer.call(pid, {:retrieve, letters})
+  end
 
   def has_words_for_letters(pid, letters) do
     pid
@@ -78,18 +89,10 @@ end
 defmodule MaccleCode.Dict do
   import MaccleCode.Shared
 
-  @doc ~S"""
-  The attributes provided to a call to Dict
-  So, use the moby-thesaurus uh, dictionary, which generally seems to have the best results
-  Format the results for easier parsing - rows seperated by newlines, columns seperated by tabs
-  Match rather than query results
-  Use POSIX regex for the actual query itself
-  """
   @attributes ~w(--database moby-thesaurus --formatted --match --strategy re)
 
   def words_beginning_with(letter) do
     if letter?(letter) do
-      # Anchor at the start of word, match the letter and any sequence and count of characters until the end of the line
       attributes = @attributes ++ ["^#{letter}.*$"]
 
       try do
@@ -121,22 +124,12 @@ defmodule MaccleCode do
   alias MaccleCode.Dict
   import MaccleCode.Shared
 
-  @type message :: String.t()
-  @type unique_letters :: list(String.t())
-  @type message_part :: list(String.t())
-  @type message_parts :: list(message_part())
-
-  # The 10 most common letters in English, apparently
   @common_letters ~w(e t a o i n s r h l)
 
   def init(opts \\ []) do
     initial_words =
       case Keyword.get(opts, :eager, nil) do
         true ->
-          # Here, we eagerly load words for the 10 most common letters in English
-          # As making 10 requests synchronous requests to Dict is painfully slow,
-          # we fire off 10 concurrent tasks instead
-          # If Dict blocks our IP, this is why lol
           @common_letters
           |> retrieve_words_for_letters()
 
@@ -147,7 +140,6 @@ defmodule MaccleCode do
     Client.start_link(initial_words)
   end
 
-  @spec encode(pid(), message()) :: any()
   def encode(pid, message) when is_pid(pid) and is_binary(message) do
     {unique_letters, message_parts} = format_message_to_encode(message)
 
@@ -189,7 +181,6 @@ defmodule MaccleCode do
     |> Enum.map(&String.at(&1, 0))
   end
 
-  @spec format_message_to_encode(message()) :: {unique_letters(), message_parts()}
   defp format_message_to_encode(message) when is_binary(message) do
     message
     |> split_string(:space)
