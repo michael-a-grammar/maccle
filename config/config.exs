@@ -7,9 +7,6 @@
 # General application configuration
 import Config
 
-config :maccle_code,
-  ecto_repos: [MaccleCode.Repo]
-
 # Configures the endpoint
 config :maccle_code, MaccleCodeWeb.Endpoint,
   url: [host: "localhost"],
@@ -18,7 +15,7 @@ config :maccle_code, MaccleCodeWeb.Endpoint,
     layout: false
   ],
   pubsub_server: MaccleCode.PubSub,
-  live_view: [signing_salt: "hk0qy1PA"]
+  live_view: [signing_salt: "wfZ+MR8X"]
 
 # Configures the mailer
 #

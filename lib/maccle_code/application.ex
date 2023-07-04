@@ -10,8 +10,6 @@ defmodule MaccleCode.Application do
     children = [
       # Start the Telemetry supervisor
       MaccleCodeWeb.Telemetry,
-      # Start the Ecto repository
-      MaccleCode.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: MaccleCode.PubSub},
       # Start Finch

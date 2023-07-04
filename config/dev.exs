@@ -1,15 +1,5 @@
 import Config
 
-# Configure your database
-config :maccle_code, MaccleCode.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "maccle_code_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
-
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -23,7 +13,7 @@ config :maccle_code, MaccleCodeWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "PqJQ/oBFCu0OlLQYsOSHvAFYKqqTeZe9aXO4FieOtZTwlJYf81OdXY73VPax6I6q",
+  secret_key_base: "HdnClf7/47q+9JIl1V/U/yDc706aIn0+SWo9NWwS8mWhIUblNVTX3eRWYjVCVPcB",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}

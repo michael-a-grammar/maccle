@@ -7,7 +7,7 @@ defmodule MaccleCodeWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_maccle_code_key",
-    signing_salt: "A3F7kSnC",
+    signing_salt: "jSDyADgI",
     same_site: "Lax"
   ]
 
@@ -29,7 +29,6 @@ defmodule MaccleCodeWeb.Endpoint do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :maccle_code
   end
 
   plug Phoenix.LiveDashboard.RequestLogger,
