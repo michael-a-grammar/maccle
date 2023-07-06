@@ -1,5 +1,4 @@
 defmodule MaccleCode.Client do
-  import MaccleCode.Shared
   alias MaccleCode.Server
 
   def start_link(initial_words \\ []) do

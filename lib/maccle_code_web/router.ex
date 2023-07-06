@@ -17,7 +17,8 @@ defmodule MaccleCodeWeb.Router do
   scope "/", MaccleCodeWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    # get "/", PageController, :home
+    live "/", MessageLive
   end
 
   # Other scopes may use custom stacks.
