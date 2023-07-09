@@ -1,5 +1,5 @@
-defmodule MaccleCode.Dict do
-  alias MaccleCode.Shared
+defmodule MaccleCode.Messaging.Dict do
+  alias MaccleCode.Messaging.Shared
 
   @attributes ~w(--database moby-thesaurus --formatted --match --strategy re)
 

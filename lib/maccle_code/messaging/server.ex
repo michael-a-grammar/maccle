@@ -1,5 +1,23 @@
-defmodule MaccleCode.Server do
+defmodule MaccleCode.Messaging.Server do
   use GenServer
+
+  def start_link(opts, initial_words \\ []) do
+    GenServer.start_link(__MODULE__, initial_words, opts)
+  end
+
+  def retrieve_words_for_letters(pid, letters) do
+    GenServer.call(pid, {:retrieve, letters})
+  end
+
+  def has_words_for_letters(pid, letters) do
+    pid
+    |> retrieve_words_for_letters(letters)
+    |> Enum.map(fn {letter, words} -> {letter, Enum.any?(words)} end)
+  end
+
+  def add_words_for_letters(pid, letters_and_words) do
+    GenServer.call(pid, {:add, letters_and_words})
+  end
 
   @impl true
   def init(initial_words \\ []) do

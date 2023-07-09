@@ -1,4 +1,4 @@
-defmodule MaccleCode.Shared do
+defmodule MaccleCode.Messaging.Shared do
   def letter?(letter) when is_binary(letter) do
     String.match?(letter, ~r/[[:alpha:]]/)
   end

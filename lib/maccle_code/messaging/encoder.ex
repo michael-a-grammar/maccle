@@ -1,7 +1,7 @@
-defmodule MaccleCode.Encoder do
-  alias MaccleCode.Client
-  alias MaccleCode.Dict
-  alias MaccleCode.Shared
+defmodule MaccleCode.Messaging.Encoder do
+  alias MaccleCode.Messaging.Dict
+  alias MaccleCode.Messaging.Server
+  alias MaccleCode.Messaging.Shared
 
   @common_letters ~w(e t a o i n s r h l)
 
@@ -16,24 +16,24 @@ defmodule MaccleCode.Encoder do
           []
       end
 
-    Client.start_link(initial_words)
+    Server.start_link(initial_words)
   end
 
   def encode(pid, message) when is_pid(pid) and is_binary(message) do
     {unique_letters, message_parts} = format_message_to_encode(message)
 
     unique_letters
-    |> then(&Client.has_words_for_letters(pid, &1))
+    |> then(&Server.has_words_for_letters(pid, &1))
     |> Enum.filter(&(!elem(&1, 1)))
     |> Enum.map(&elem(&1, 0))
     |> retrieve_words_for_letters()
-    |> then(&Client.add_words_for_letters(pid, &1))
+    |> then(&Server.add_words_for_letters(pid, &1))
 
     encoded_message =
       message_parts
       |> Enum.map(fn letters ->
         letters
-        |> then(&Client.retrieve_words_for_letters(pid, &1))
+        |> then(&Server.retrieve_words_for_letters(pid, &1))
         |> Enum.map(fn words ->
           words
           |> elem(1)
