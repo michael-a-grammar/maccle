@@ -1,21 +1,13 @@
-# This file is responsible for configuring your application
-# and its dependencies with the aid of the Config module.
+# This file is responsible for configuring your umbrella
+# and **all applications** and their dependencies with the
+# help of the Config module.
 #
-# This configuration file is loaded before any dependency and
-# is restricted to this project.
-
-# General application configuration
+# Note that all applications in your umbrella share the
+# same configuration and dependencies, which is why they
+# all use the same configuration file. If you want different
+# configurations or dependencies per app, it is best to
+# move said applications out of the umbrella.
 import Config
-
-# Configures the endpoint
-config :maccle_code, MaccleCodeWeb.Endpoint,
-  url: [host: "localhost"],
-  render_errors: [
-    formats: [html: MaccleCodeWeb.ErrorHTML, json: MaccleCodeWeb.ErrorJSON],
-    layout: false
-  ],
-  pubsub_server: MaccleCode.PubSub,
-  live_view: [signing_salt: "wfZ+MR8X"]
 
 # Configures the mailer
 #
@@ -24,7 +16,20 @@ config :maccle_code, MaccleCodeWeb.Endpoint,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :maccle_code, MaccleCode.Mailer, adapter: Swoosh.Adapters.Local
+config :maccle, Maccle.Mailer, adapter: Swoosh.Adapters.Local
+
+config :maccle_web,
+  generators: [context_app: :maccle]
+
+# Configures the endpoint
+config :maccle_web, MaccleWeb.Endpoint,
+  url: [host: "localhost"],
+  render_errors: [
+    formats: [html: MaccleWeb.ErrorHTML, json: MaccleWeb.ErrorJSON],
+    layout: false
+  ],
+  pubsub_server: Maccle.PubSub,
+  live_view: [signing_salt: "lHDWSUw0"]
 
 # Configure esbuild (the version is required)
 config :esbuild,
@@ -32,7 +37,7 @@ config :esbuild,
   default: [
     args:
       ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
-    cd: Path.expand("../assets", __DIR__),
+    cd: Path.expand("../apps/maccle_web/assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
@@ -45,7 +50,7 @@ config :tailwind,
       --input=css/app.css
       --output=../priv/static/assets/app.css
     ),
-    cd: Path.expand("../assets", __DIR__)
+    cd: Path.expand("../apps/maccle_web/assets", __DIR__)
   ]
 
 # Configures Elixir's Logger

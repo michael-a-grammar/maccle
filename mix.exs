@@ -1,52 +1,32 @@
-defmodule MaccleCode.MixProject do
+defmodule Maccle.Umbrella.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :maccle_code,
+      apps_path: "apps",
       version: "0.1.0",
-      elixir: "~> 1.14",
-      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      aliases: aliases()
     ]
   end
 
-  # Configuration for the OTP application.
+  # Dependencies can be Hex packages:
   #
-  # Type `mix help compile.app` for more information.
-  def application do
-    [
-      mod: {MaccleCode.Application, []},
-      extra_applications: [:logger, :runtime_tools]
-    ]
-  end
-
-  # Specifies which paths to compile per environment.
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
-
-  # Specifies your project dependencies.
+  #   {:mydep, "~> 0.3.0"}
   #
-  # Type `mix help deps` for examples and options.
+  # Or git/path repositories:
+  #
+  #   {:mydep, git: "https://github.com/elixir-lang/mydep.git", tag: "0.1.0"}
+  #
+  # Type "mix help deps" for more examples and options.
+  #
+  # Dependencies listed here are available only for this project
+  # and cannot be accessed from applications inside the apps/ folder.
   defp deps do
     [
-      {:phoenix, "~> 1.7.6"},
-      {:phoenix_html, "~> 3.3"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.19.0"},
-      {:floki, ">= 0.30.0", only: :test},
-      {:phoenix_live_dashboard, "~> 0.8.0"},
-      {:esbuild, "~> 0.7", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
-      {:swoosh, "~> 1.3"},
-      {:finch, "~> 0.13"},
-      {:telemetry_metrics, "~> 0.6"},
-      {:telemetry_poller, "~> 1.0"},
-      {:gettext, "~> 0.20"},
-      {:jason, "~> 1.2"},
-      {:plug_cowboy, "~> 2.5"}
+      # Required to run "mix format" on ~H/.heex files from the umbrella root
+      {:phoenix_live_view, ">= 0.0.0"}
     ]
   end
 
@@ -56,12 +36,13 @@ defmodule MaccleCode.MixProject do
   #     $ mix setup
   #
   # See the documentation for `Mix` for more info on aliases.
+  #
+  # Aliases listed here are available only for this project
+  # and cannot be accessed from applications inside the apps/ folder.
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup", "assets.build"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind default", "esbuild default"],
-      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
+      # run `mix setup` in all child apps
+      setup: ["cmd mix setup"]
     ]
   end
 end
