@@ -18,6 +18,8 @@ defmodule MaccleCode.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {MaccleCode.Application, []},
+      env: [eager_load_words_for_common_letters: false],
       extra_applications: [:logger]
     ]
   end

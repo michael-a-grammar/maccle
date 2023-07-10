@@ -1,8 +1,8 @@
 defmodule MaccleCode.Server do
   use GenServer
 
-  def start_link(opts, initial_words \\ []) do
-    GenServer.start_link(__MODULE__, initial_words, opts)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, [], opts)
   end
 
   def retrieve_words_for_letters(pid, letters) do
