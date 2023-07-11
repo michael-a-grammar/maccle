@@ -23,7 +23,7 @@ defmodule MaccleWeb.MixProject do
   def application do
     [
       mod: {MaccleWeb.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :maccle_code]
     ]
   end
 

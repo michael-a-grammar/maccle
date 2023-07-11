@@ -6,34 +6,33 @@ defmodule MaccleCode do
   @common_letters ~w(e t a o i n s r h l)
 
   def init(opts \\ []) do
-    initial_words =
-      case Keyword.get(opts, :eager, nil) do
-        true ->
-          @common_letters
-          |> retrieve_words_for_letters()
-
-        _ ->
-          []
-      end
-
-    Server.start_link(initial_words)
+    case Keyword.get(
+           opts,
+           :eager_load_words_for_common_letters,
+           eager_load_words_for_common_letters()
+         ) do
+      true ->
+        @common_letters
+        |> retrieve_words_for_letters()
+        |> then(&Server.add_words_for_letters(Server, &1))
+    end
   end
 
-  def encode(pid, message) when is_pid(pid) and is_binary(message) do
+  def encode(message) when is_binary(message) do
     {unique_letters, message_parts} = format_message_to_encode(message)
 
     unique_letters
-    |> then(&Server.has_words_for_letters(pid, &1))
+    |> then(&Server.has_words_for_letters(Server, &1))
     |> Enum.filter(&(!elem(&1, 1)))
     |> Enum.map(&elem(&1, 0))
     |> retrieve_words_for_letters()
-    |> then(&Server.add_words_for_letters(pid, &1))
+    |> then(&Server.add_words_for_letters(Server, &1))
 
     encoded_message =
       message_parts
       |> Enum.map(fn letters ->
         letters
-        |> then(&Server.retrieve_words_for_letters(pid, &1))
+        |> then(&Server.retrieve_words_for_letters(Server, &1))
         |> Enum.map(fn words ->
           words
           |> elem(1)
@@ -83,5 +82,9 @@ defmodule MaccleCode do
       end)
     end)
     |> Task.await_many()
+  end
+
+  defp eager_load_words_for_common_letters() do
+    Application.fetch_env!(:maccle_code, :eager_load_words_for_common_letters)
   end
 end

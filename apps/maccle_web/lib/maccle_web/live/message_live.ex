@@ -4,10 +4,10 @@ defmodule MaccleWeb.MessageLive do
   use MaccleWeb, :live_view
 
   def mount(_params, _session, socket) do
-    {:ok, pid} = MaccleCode.init(eager: true)
+    # TODO: I don't like this - surely this could be inadvertantly called multiple times?
+    MaccleCode.init()
 
-    {:ok,
-     assign(socket, form: to_form(%{}), message_to_encode: "", encoded_message: "", encoder: pid)}
+    {:ok, assign(socket, form: to_form(%{}), message_to_encode: "", encoded_message: "")}
   end
 
   def render(assigns) do
@@ -22,10 +22,7 @@ defmodule MaccleWeb.MessageLive do
   end
 
   def handle_event("change", %{"message_to_encode" => message_to_encode}, socket) do
-    pid = socket.assigns.encoder
-
-    encoded_message =
-      MaccleCode.encode(pid, message_to_encode) |> MaccleCode.format_encoded_message()
+    encoded_message = MaccleCode.encode(message_to_encode) |> MaccleCode.format_encoded_message()
 
     socket = update(socket, :message_to_encode, fn _ -> message_to_encode end)
     socket = update(socket, :encoded_message, fn _ -> encoded_message end)

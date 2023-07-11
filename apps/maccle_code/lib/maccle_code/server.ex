@@ -9,6 +9,7 @@ defmodule MaccleCode.Server do
     GenServer.call(pid, {:retrieve, letters})
   end
 
+  @spec has_words_for_letters(atom | pid | {atom, any} | {:via, atom, any}, any) :: list
   def has_words_for_letters(pid, letters) do
     pid
     |> retrieve_words_for_letters(letters)
@@ -20,19 +21,10 @@ defmodule MaccleCode.Server do
   end
 
   @impl true
-  def init(initial_words \\ []) do
+  def init(_opts) do
     letters_and_words =
       for codepoint <- ?a..?z, into: [] do
-        letter = <<codepoint::utf8>>
-
-        words =
-          initial_words
-          |> Enum.flat_map(fn
-            {^letter, words} -> words
-            _ -> []
-          end)
-
-        {letter, words}
+        {<<codepoint::utf8>>, []}
       end
 
     {:ok, letters_and_words}

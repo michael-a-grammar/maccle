@@ -1,6 +1,6 @@
 import Config
 
-config :maccle_code, :eager_load_words_for_common_letters, false
+config :maccle_code, :eager_load_words_for_common_letters, true
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
