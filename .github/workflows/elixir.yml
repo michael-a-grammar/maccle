@@ -105,6 +105,8 @@ jobs:
       with:
         name: upload-artifact-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
         path: |
+          Dockerfile
+          fly.toml
           mix.exs
           mix.lock
           config/config.exs
