@@ -6,14 +6,14 @@ import Config
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :maccle_web, MaccleWeb.Endpoint,
+config :maccle, MaccleWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "ozJW47msRgPZ+YGnWYSC16oQUchPjsnVQgDggTa0Z8pjaWUNMdQ9KY58LmmQGH22",
+  secret_key_base: "knwnUiTWSFBX8FRG2jWR8ir2l+wpzE03CGn7Z0Fi4yZ3rkWmNWWjQATjWW+5/hmP",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
@@ -43,7 +43,7 @@ config :maccle_web, MaccleWeb.Endpoint,
 # different ports.
 
 # Watch static and templates for browser reloading.
-config :maccle_web, MaccleWeb.Endpoint,
+config :maccle, MaccleWeb.Endpoint,
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
@@ -53,17 +53,17 @@ config :maccle_web, MaccleWeb.Endpoint,
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :maccle_web, dev_routes: true
+config :maccle, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
+
+# Set a higher stacktrace during development. Avoid configuring such
+# in production as building large stacktraces may be expensive.
+config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
-
-# Set a higher stacktrace during development. Avoid configuring such
-# in production as building large stacktraces may be expensive.
-config :phoenix, :stacktrace_depth, 20

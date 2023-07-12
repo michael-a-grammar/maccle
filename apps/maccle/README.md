@@ -1,3 +1,0 @@
-# Maccle
-
-**TODO: Add description**
