@@ -1,13 +1,21 @@
-# This file is responsible for configuring your umbrella
-# and **all applications** and their dependencies with the
-# help of the Config module.
+# This file is responsible for configuring your application
+# and its dependencies with the aid of the Config module.
 #
-# Note that all applications in your umbrella share the
-# same configuration and dependencies, which is why they
-# all use the same configuration file. If you want different
-# configurations or dependencies per app, it is best to
-# move said applications out of the umbrella.
+# This configuration file is loaded before any dependency and
+# is restricted to this project.
+
+# General application configuration
 import Config
+
+# Configures the endpoint
+config :maccle, MaccleWeb.Endpoint,
+  url: [host: "localhost"],
+  render_errors: [
+    formats: [html: MaccleWeb.ErrorHTML, json: MaccleWeb.ErrorJSON],
+    layout: false
+  ],
+  pubsub_server: Maccle.PubSub,
+  live_view: [signing_salt: "9lVzUlu7"]
 
 # Configures the mailer
 #
@@ -18,26 +26,13 @@ import Config
 # at the `config/runtime.exs`.
 config :maccle, Maccle.Mailer, adapter: Swoosh.Adapters.Local
 
-config :maccle_web,
-  generators: [context_app: :maccle]
-
-# Configures the endpoint
-config :maccle_web, MaccleWeb.Endpoint,
-  url: [host: "localhost"],
-  render_errors: [
-    formats: [html: MaccleWeb.ErrorHTML, json: MaccleWeb.ErrorJSON],
-    layout: false
-  ],
-  pubsub_server: Maccle.PubSub,
-  live_view: [signing_salt: "lHDWSUw0"]
-
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.17.11",
   default: [
     args:
       ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
-    cd: Path.expand("../apps/maccle_web/assets", __DIR__),
+    cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
@@ -50,7 +45,7 @@ config :tailwind,
       --input=css/app.css
       --output=../priv/static/assets/app.css
     ),
-    cd: Path.expand("../apps/maccle_web/assets", __DIR__)
+    cd: Path.expand("../assets", __DIR__)
   ]
 
 # Configures Elixir's Logger
