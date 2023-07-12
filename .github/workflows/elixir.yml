@@ -103,8 +103,17 @@ jobs:
       if: github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v3
       with:
-        name: upload-artifact ${{ github.run_id }} ${{ github.run_number }} ${{ github.run_attempt }}
-        path: .
+        name: upload-artifact-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
+        path: |
+          mix.exs
+          mix.lock
+          config/config.exs
+          config/runtime.exs
+          config/prod.exs
+          priv
+          lib
+          assets
+          rel
         if-no-files-found: error
       
   deploy:
@@ -115,8 +124,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: upload-artifact ${{ github.run_id }} ${{ github.run_number }} ${{ github.run_attempt }}
+          name: upload-artifact-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      - run: ls -R && flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
