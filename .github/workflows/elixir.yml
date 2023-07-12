@@ -99,12 +99,23 @@ jobs:
     - name: Run tests
       run: mix test
       
+    - name: Upload artifact
+      if: github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v3
+      with:
+        name: upload-artifact ${{ github.run_id }} ${{ github.run_number }} ${{ github.run_attempt }}
+        path: .
+        if-no-files-found: error
+      
   deploy:
     name: Deploy app
     if: github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: upload-artifact ${{ github.run_id }} ${{ github.run_number }} ${{ github.run_attempt }}
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --remote-only
         env:
