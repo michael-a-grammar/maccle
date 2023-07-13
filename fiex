@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+
+fly ssh console --select --pty -C "/app/bin/maccle remote"
