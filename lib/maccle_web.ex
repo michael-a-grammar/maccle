@@ -85,6 +85,7 @@ defmodule MaccleWeb do
       import Phoenix.HTML
       # Core UI components and translation
       import MaccleWeb.CoreComponents
+      import MaccleWeb.Cats
       import MaccleWeb.Gettext
 
       # Shortcut for generating JS commands
