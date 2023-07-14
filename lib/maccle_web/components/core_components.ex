@@ -196,7 +196,7 @@ defmodule MaccleWeb.CoreComponents do
   def simple_form(assigns) do
     ~H"""
     <.form :let={f} for={@for} as={@as} {@rest}>
-      <div class="mt-10 space-y-8 bg-white">
+      <div class="space-y-8">
         <%= render_slot(@inner_block, f) %>
         <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
           <%= render_slot(action, f) %>
@@ -225,7 +225,7 @@ defmodule MaccleWeb.CoreComponents do
     <button
       type={@type}
       class={[
-        "phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3",
+        "phx-submit-loading:opacity-75 rounded-lg py-2 px-3",
         "text-sm font-semibold leading-6 text-white active:text-white/80",
         @class
       ]}
@@ -352,8 +352,8 @@ defmodule MaccleWeb.CoreComponents do
         name={@name}
         class={[
           "mt-2 min-h-[6rem] block bg-gradient-to-b from-base to-crust w-full text-subtext0  sm:text-lg sm:leading-6",
-          "border-4 rounded-sm phx-no-feedback:border-pink phx-no-feedback:focus:border-peach",
-          "shadow-lg phx-no-feedback:shadow-pink phx-no-feedback:focus:shadow-peach resize-none focus:ring-0",
+          "border-4 rounded-sm phx-no-feedback:border-pink phx-no-feedback:hover:border-peach phx-no-feedback:focus:border-peach",
+          "shadow-lg phx-no-feedback:shadow-pink phx-no-feedback:hover:shadow-peach phx-no-feedback:focus:shadow-peach resize-none focus:ring-0",
           @errors == [] && "border-pink focus:border-peach shadow-pink focus:shadow-peach",
           @errors != [] && "border-red focus:border-maroon shadow-red focus:shadow-marooon"
         ]}

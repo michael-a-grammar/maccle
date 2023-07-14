@@ -12,7 +12,7 @@ defmodule MaccleWeb.MessageLive do
 
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col space-y-10">
+    <div class="flex flex-col space-y-6">
       <div>
         <.simple_form for={@form}>
           <.input
@@ -24,20 +24,48 @@ defmodule MaccleWeb.MessageLive do
           />
         </.simple_form>
       </div>
+      <div>
+        <.button
+          class="bg-blue hover:bg-lavender disabled:opacity-75 disabled:active:text-white enabled:active:bg-green"
+          disabled={@encoded_message == ""}
+          phx-click={JS.dispatch("phx:copy", to: "#encoded-message")}
+        >
+          Copy encoded message
+        </.button>
+        <.button
+          class="bg-red hover:bg-maroon disabled:opacity-75 disabled:active:text-white enabled:active:bg-green"
+          disabled={@encoded_message == ""}
+          phx-click={clear_message_to_encode("#message_to_encode")}
+        >
+          Clear typed message
+        </.button>
+      </div>
       <div class="h-screen">
         <div class={[
-          "bg-gradient-to-b from-base to-crust text-pink sm:text-lg sm:leading-6 border-4",
-          "rounded-sm border-pink hover:border-peach shadow-pink hover:shadow-peach",
-          "outline outline-2 outline-white rounded-sm",
-          @encoded_message == "" && "invisible"
+          "flex place-content-center min-h-[640px] bg-encoded-message bg-cover bg-center text-mauve sm:text-lg sm:leading-6 border-4",
+          "rounded-sm border-pink hover:border-peach shadow-lg shadow-pink hover:shadow-peach",
+          "outline outline-2 outline-white",
+          @encoded_message !== "" && "transition-opacity ease-in duration-700 opacity-100",
+          @encoded_message == "" && "transition-opacity ease-out duration-700 opacity-0"
         ]}>
-          <p class="p-8">
+          <div
+            id="encoded-message"
+            class={[
+              "m-4 p-2 font-medium w-4/5 h-fit",
+              String.length(@encoded_message) >= 80 &&
+                "bg-[#ffecce] border-[#ffecce] border-4 rounded-sm"
+            ]}
+          >
             <%= @encoded_message %>
-          </p>
+          </div>
         </div>
       </div>
     </div>
     """
+  end
+
+  def handle_event("change", %{"value" => message_to_encode}, socket) do
+    handle_event("change", %{"message_to_encode" => message_to_encode}, socket)
   end
 
   def handle_event("change", %{"message_to_encode" => message_to_encode}, socket) do
@@ -52,4 +80,10 @@ defmodule MaccleWeb.MessageLive do
   end
 
   def handle_event("change", _, socket), do: {:noreply, socket}
+
+  def clear_message_to_encode(js \\ %JS{}, selector) do
+    js
+    |> JS.push("change")
+    |> JS.dispatch("phx:clear", to: selector)
+  end
 end

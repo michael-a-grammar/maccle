@@ -5,16 +5,16 @@ defmodule MaccleWeb.Cats do
     ~H"""
     <div class="cat-container">
       <div class="cat">
-        <div class="ear ear--left"></div>
-        <div class="ear ear--right"></div>
-        <div class="face">
-          <div class="eye eye--left">
-            <div class="eye-pupil"></div>
+        <div class="ear ear--left bg-pink border-8 border-surface2 rounded-sm"></div>
+        <div class="ear ear--right bg-pink border-8 border-surface2 rounded-sm"></div>
+        <div class="face bg-surface2">
+          <div class="eye eye--left after:bg-surface2">
+            <div class="eye-pupil bg-lavender"></div>
           </div>
-          <div class="eye eye--right">
-            <div class="eye-pupil"></div>
+          <div class="eye eye--right after:bg-surface2">
+            <div class="eye-pupil bg-lavender"></div>
           </div>
-          <div class="muzzle"></div>
+          <div class="muzzle bg-pink"></div>
         </div>
       </div>
     </div>
@@ -22,8 +22,8 @@ defmodule MaccleWeb.Cats do
     <style scoped>
       .cat {
         position: relative;
-        height: 170px;
-        width: 192.1px;
+        height: 85px;
+        width: 96.05px;
       }
 
       .ear {
@@ -31,7 +31,6 @@ defmodule MaccleWeb.Cats do
         top: -30%;
         height: 60%;
         width: 25%;
-        background: #fff;
       }
       .ear::before, .ear::after {
         content: "";
@@ -40,7 +39,6 @@ defmodule MaccleWeb.Cats do
         height: 10%;
         width: 5%;
         border-radius: 50%;
-        background: #161616;
       }
       .ear::after {
         transform-origin: 50% 100%;
@@ -74,7 +72,6 @@ defmodule MaccleWeb.Cats do
         position: absolute;
         height: 100%;
         width: 100%;
-        background: #161616;
         border-radius: 50%;
       }
 
@@ -94,7 +91,6 @@ defmodule MaccleWeb.Cats do
         height: 0;
         width: 100%;
         border-radius: 0 0 50% 50%/0 0 40% 40%;
-        background: #161616;
         -webkit-animation: blink 4s infinite ease-in;
               animation: blink 4s infinite ease-in;
         }
@@ -167,7 +163,6 @@ defmodule MaccleWeb.Cats do
         top: 25%;
         height: 50%;
         width: 20%;
-        background: #161616;
         border-radius: 50%;
         -webkit-animation: look-around 4s infinite;
               animation: look-around 4s infinite;
@@ -241,7 +236,6 @@ defmodule MaccleWeb.Cats do
         left: 50%;
         height: 6%;
         width: 10%;
-        background: #fff;
         transform: translateX(-50%);
         border-radius: 50% 50% 50% 50%/30% 30% 70% 70%;
       }
@@ -251,7 +245,7 @@ defmodule MaccleWeb.Cats do
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #161616;
+        background: transparent;
       }
     </style>
     """

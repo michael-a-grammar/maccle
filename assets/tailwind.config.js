@@ -17,7 +17,8 @@ module.exports = {
         brand: "#FD4F00",
       },
       backgroundImage: {
-        'cats': "url('/images/cats.jpg')"
+        'cats-background': "url('/images/cats/background.jpg')",
+        'encoded-message': "url('/images/cats/encoded-message.jpg')"
       }
     },
   },
