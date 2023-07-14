@@ -12,11 +12,30 @@ defmodule MaccleWeb.MessageLive do
 
   def render(assigns) do
     ~H"""
-    <.simple_form for={@form}>
-      <.input field={@form[:message_to_encode]} phx-change="change" type="textarea" rows="4" />
-    </.simple_form>
-    <div class="text-pink h-screen">
-      <%= @encoded_message %>
+    <div class="flex flex-col space-y-10">
+      <div>
+        <.simple_form for={@form}>
+          <.input
+            field={@form[:message_to_encode]}
+            phx-change="change"
+            type="textarea"
+            rows="4"
+            placeholder="Enter your message here"
+          />
+        </.simple_form>
+      </div>
+      <div class="h-screen">
+        <div class={[
+          "bg-gradient-to-b from-base to-crust text-pink sm:text-lg sm:leading-6 border-4",
+          "rounded-sm border-pink hover:border-peach shadow-pink hover:shadow-peach",
+          "outline outline-2 outline-white rounded-sm",
+          @encoded_message == "" && "invisible"
+        ]}>
+          <p class="p-8">
+            <%= @encoded_message %>
+          </p>
+        </div>
+      </div>
     </div>
     """
   end

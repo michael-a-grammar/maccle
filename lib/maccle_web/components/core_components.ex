@@ -340,16 +340,22 @@ defmodule MaccleWeb.CoreComponents do
 
   def input(%{type: "textarea"} = assigns) do
     ~H"""
-    <div phx-feedback-for={@name}>
+    <div
+      phx-feedback-for={@name}
+      class={[
+        "outline outline-2 outline-white rounded-sm"
+      ]}
+    >
       <.label for={@id}><%= @label %></.label>
       <textarea
         id={@id}
         name={@name}
         class={[
-          "mt-2 block bg-gradient-to-l from-base to-crust w-full rounded-lg text-text focus:ring-0 sm:text-lg sm:leading-6",
-          "min-h-[6rem] border-4 phx-no-feedback:border-pink phx-no-feedback:focus:border-peach resize-none",
-          @errors == [] && "border-pink focus:border-peach",
-          @errors != [] && "border-red focus:border-red"
+          "mt-2 min-h-[6rem] block bg-gradient-to-b from-base to-crust w-full text-subtext0  sm:text-lg sm:leading-6",
+          "border-4 rounded-sm phx-no-feedback:border-pink phx-no-feedback:focus:border-peach",
+          "shadow-lg phx-no-feedback:shadow-pink phx-no-feedback:focus:shadow-peach resize-none focus:ring-0",
+          @errors == [] && "border-pink focus:border-peach shadow-pink focus:shadow-peach",
+          @errors != [] && "border-red focus:border-maroon shadow-red focus:shadow-marooon"
         ]}
         {@rest}
       ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
