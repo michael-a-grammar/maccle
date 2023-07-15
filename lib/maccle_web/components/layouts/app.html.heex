@@ -1,6 +1,6 @@
 <header class="px-4 sm:px-6 lg:px-8">
   <div class="flex items-center justify-between py-3 text-sm">
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4 invisible md:visible">
       <a href="/">
         <img src={~p"/images/logo.svg"} width="36" />
       </a>
@@ -8,16 +8,22 @@
         v<%= Application.spec(:phoenix, :vsn) %>
       </p>
     </div>
-    <div class="flex items-center gap-4 text-3xl font-extrabold">
+    <div class="flex items-center gap-4 text-md md:text-3xl font-extrabold">
       <p class="text-transparent from-pink to-mauve bg-gradient-to-r bg-clip-text hover:from-green hover:to-lavender">
         Maccle Code
       </p>
     </div>
-    <div class="flex items-center gap-4 font-semibold leading-6 text-subtext0">
-      <a href="https://github.com/michael-a-grammar/maccle" class="hover:text-pink">
+    <div class="flex items-center gap-2 font-semibold leading-6 text-subtext0">
+      <a
+        href="https://github.com/michael-a-grammar/maccle"
+        class="hover:text-pink invisible md:visible"
+      >
         Source
       </a>
-      <a href="https://github.com/users/michael-a-grammar/projects/1" class="hover:text-mauve">
+      <a
+        href="https://github.com/users/michael-a-grammar/projects/1"
+        class="hover:text-mauve invisible md:visible"
+      >
         Project
       </a>
 

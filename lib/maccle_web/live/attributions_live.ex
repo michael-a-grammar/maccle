@@ -13,7 +13,7 @@ defmodule MaccleWeb.Attributions do
         Attributions
       </.button>
       <.modal id="attributions-modal">
-        <ul>
+        <ul class="space-y-4">
           <li>
             <a
               class="hover:text-sapphire"

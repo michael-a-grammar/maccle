@@ -24,7 +24,7 @@ defmodule MaccleWeb.MessageLive do
           />
         </.simple_form>
       </div>
-      <div>
+      <div class="space-y-2 md:space-y-0">
         <.button
           class="bg-blue hover:bg-lavender disabled:opacity-75 disabled:active:text-white enabled:active:bg-green"
           disabled={@encoded_message == ""}
