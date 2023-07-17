@@ -1,4 +1,4 @@
-defmodule MaccleWeb.MessageLive do
+defmodule MaccleWeb.EncodeMessageLive do
   alias Maccle.MessageEncoder.Client
 
   use MaccleWeb, :live_view
@@ -51,7 +51,7 @@ defmodule MaccleWeb.MessageLive do
           <div
             id="encoded-message"
             class={[
-              "m-4 p-2 font-medium w-4/5 h-fit",
+              "m-4 p-2 w-4/5 h-fit font-medium",
               String.length(@encoded_message) >= 80 &&
                 "bg-[#ffecce] border-[#ffecce] border-4 rounded-sm"
             ]}

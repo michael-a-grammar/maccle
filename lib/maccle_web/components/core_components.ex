@@ -351,7 +351,7 @@ defmodule MaccleWeb.CoreComponents do
         id={@id}
         name={@name}
         class={[
-          "mt-2 min-h-[6rem] block bg-gradient-to-b from-base to-crust w-full text-subtext0  sm:text-lg sm:leading-6",
+          "mt-2 min-h-[6rem] block bg-gradient-to-b from-base to-crust w-full text-subtext0 sm:text-lg sm:leading-6",
           "border-4 rounded-sm phx-no-feedback:border-pink phx-no-feedback:hover:border-peach phx-no-feedback:focus:border-peach",
           "shadow-lg phx-no-feedback:shadow-pink phx-no-feedback:hover:shadow-peach phx-no-feedback:focus:shadow-peach resize-none focus:ring-0",
           @errors == [] && "border-pink focus:border-peach shadow-pink focus:shadow-peach",
