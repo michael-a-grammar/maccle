@@ -13,6 +13,12 @@ defmodule MaccleWeb.EncodeMessageLive do
   def render(assigns) do
     ~H"""
     <div class="flex flex-col space-y-6">
+      <.button
+        class="w-1/2 bg-blue hover:bg-lavender disabled:opacity-75 disabled:active:text-white enabled:active:bg-green"
+        phx-click="redirect_to_decode_message"
+      >
+        Decode message
+      </.button>
       <div>
         <.simple_form for={@form}>
           <.input
@@ -80,6 +86,10 @@ defmodule MaccleWeb.EncodeMessageLive do
   end
 
   def handle_event("change", _, socket), do: {:noreply, socket}
+
+  def handle_event("redirect_to_decode_message", _, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/decode/")}
+  end
 
   def clear_message_to_encode(js \\ %JS{}, selector) do
     js

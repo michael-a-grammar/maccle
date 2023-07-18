@@ -58,10 +58,15 @@ defmodule Maccle.MessageEncoder.Client do
     end
   end
 
-  def decode_message(encoded_message) when is_binary(encoded_message) do
+  def decode(encoded_message) when is_binary(encoded_message) do
     encoded_message
     |> Shared.split_string(:space)
     |> Enum.map(&String.first/1)
+  end
+
+  def format_decoded_message(decoded_message) do
+    decoded_message
+    |> Enum.join(" ")
   end
 
   defp format_message_to_encode(message) when is_binary(message) do
