@@ -4,7 +4,6 @@ defmodule MaccleWeb.EncodeMessageLive do
   use MaccleWeb, :live_view
 
   def mount(_params, _session, socket) do
-    # TODO: I don't like this - surely this could be inadvertantly called multiple times?
     Client.init()
 
     {:ok, assign(socket, form: to_form(%{}), message_to_encode: "", encoded_message: "")}

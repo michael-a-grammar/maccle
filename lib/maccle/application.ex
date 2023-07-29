@@ -19,7 +19,8 @@ defmodule Maccle.Application do
       # Start a worker by calling: Maccle.Worker.start_link(arg)
       # {Maccle.Worker, arg}
 
-      {Maccle.MessageEncoder.Server, name: Maccle.MessageEncoder.Server}
+      {Maccle.MessageEncoder.Server, name: Maccle.MessageEncoder.Server},
+      {Task, &Maccle.MessageEncoder.Client.init/0}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
